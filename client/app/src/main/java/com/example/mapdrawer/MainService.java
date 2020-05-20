@@ -23,10 +23,46 @@ import android.util.TimeUtils;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+
+import java.util.HashMap;
+import java.util.Map;
+
+
 public class MainService extends Service {
-    static LocationManager locationManager;
-    static LocationListener locationListener;
-    static NotificationManager manager;
+    private static LocationManager locationManager;
+    static String API_URL = "http://192.168.1.74:5000/add";
+    private static LocationListener locationListener;
+    private static NotificationManager manager;
+
+    private static int sendData(final Location location) {
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Log.d("Service", "got response ");
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("Service", error.toString());
+            }
+        })
+        {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                HashMap<String, String> params = new HashMap<>();
+                params.put("x", Double.toString(location.getLatitude()));
+                params.put("y", Double.toString(location.getLongitude()));
+                return params;
+            }
+        };
+        MainActivity.queue.add(stringRequest);
+        return 0;
+    }
 
     @Nullable
     @Override
@@ -42,6 +78,7 @@ public class MainService extends Service {
             @Override
             public void onLocationChanged(Location location) {
                 Log.d("Service", "onLocationChanged");
+                sendData(location);
                 MainActivity.all.add(location);
             }
 
@@ -49,6 +86,7 @@ public class MainService extends Service {
             @Override
             public void onStatusChanged(String provider, int status, Bundle extras) {
                 Log.d("Service", "onStatushanged");
+                sendData(locationManager.getLastKnownLocation(provider));
                 MainActivity.all.add(locationManager.getLastKnownLocation(provider));
             }
 
@@ -56,6 +94,7 @@ public class MainService extends Service {
             @Override
             public void onProviderEnabled(String provider) {
                 Log.d("Service", "onProviderEnabled");
+                sendData(locationManager.getLastKnownLocation(provider));
                 MainActivity.all.add(locationManager.getLastKnownLocation(provider));
             }
 

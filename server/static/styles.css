@@ -1,0 +1,24 @@
+body {
+	width: 100%;
+}
+h1 {
+	text-align: center;
+}
+.header {
+	height: 100px;
+	width: 100%;
+}
+.map {
+	width: 1000px;
+	height: 1000px;
+	margin: 0 auto 0 auto;
+	border: solid 10px black;
+}
+.dot {
+  height: 1px;
+  width: 1px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+  position: absolute;
+}

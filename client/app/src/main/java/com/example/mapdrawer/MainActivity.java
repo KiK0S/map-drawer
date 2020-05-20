@@ -4,6 +4,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -20,6 +21,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
+
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -28,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     static ArrayList<Location> all;
     static Location current;
     Intent service;
-
+    static RequestQueue queue;
     @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,15 +54,10 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 current = all.get(all.size() - 1);
-                if (all.size() > 40) {
-                    stopService(new Intent(MainActivity.this, MainService.class));
-                }
                 coordsTextView.setText("Новые координаты " + current + "\nВсего записей: " + all.size());
             }
         });
-        Log.d("Activity", "starting service");
-
-        Log.d("Activity", "service started");
+        queue = Volley.newRequestQueue(this);
     }
 
     @Override

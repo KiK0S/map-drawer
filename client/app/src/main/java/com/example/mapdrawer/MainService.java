@@ -15,6 +15,7 @@ import android.graphics.drawable.Icon;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -35,7 +36,7 @@ import java.util.Map;
 
 public class MainService extends Service {
     private static LocationManager locationManager;
-    static String API_URL = "http://192.168.1.74:5000/add";
+    static String API_URL = "http://104.140.100.118:5000/add";
     private static LocationListener locationListener;
     private static NotificationManager manager;
 
@@ -103,10 +104,21 @@ public class MainService extends Service {
 
             }
         };
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, -1, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 20, 50, locationListener);
         Log.d("Service", "started in foreground");
         manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        manager.notify(1, new Notification.Builder(this, "drawmap").setContentText("content text").setSmallIcon(Icon.createWithBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.nature))).setContentTitle("content title").build());
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "random name");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        {
+            String channelId = "Mapdrawer_id";
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    "DrawMap Channel",
+                    NotificationManager.IMPORTANCE_LOW);
+            manager.createNotificationChannel(channel);
+            builder.setChannelId(channelId);
+        }
+        manager.notify(1, builder.setContentText("Я слежу за тобой").setSmallIcon(R.drawable.nature).setContentTitle("Соединен с сервером").build());
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -117,14 +129,5 @@ public class MainService extends Service {
         manager.cancel(1);
         super.onDestroy();
     }
-
-    @Override
-    public boolean stopService(Intent name) {
-        Log.d("Service", "stop");
-        locationManager.removeUpdates(locationListener);
-        manager.cancel(1);
-        return super.stopService(name);
-    }
-
 }
 

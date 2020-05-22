@@ -1,5 +1,6 @@
 body {
 	width: 100%;
+	text-align: center;
 }
 h1 {
 	text-align: center;
@@ -9,9 +10,7 @@ h1 {
 	width: 100%;
 }
 .map {
-	width: 1000px;
-	height: 1000px;
-	margin: 0 auto 0 auto;
+	margin: 0 auto;
 	border: solid 10px black;
 }
 .dot {

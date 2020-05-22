@@ -1,30 +1,32 @@
 from flask import Flask, url_for, render_template, request
+import json
+
+app = Flask("MapDrawer", static_url_path='')
 
 
-app = Flask("MapDrawer")
-
-points = []
+def add_point(x, y):
+	x = float(x)
+	y = float(y)
+	points = json.load(open('static/coords.json', 'r'))
+	points.append({'x': x , 'y': y})
+	json.dump(points, open('static/coords.json', 'w'))
 
 @app.route("/")
 def index():
 	url_for('static', filename='styles.css')
-	return render_template("index.html", points=points)
+	return render_template("index.html")
 
-@app.route("/add", methods=["GET", "POST"])
+@app.route("/add", methods=["POST"])
 def add():
 	print(request)
 	X = None
 	Y = None
-	# if request.method == "GET":
 	X = request.form.get('x')
 	Y = request.form.get('y')
-	# else:
-	# 	X = request.['x']
-	# 	Y = request.form['y']
-	points.append({"x": X, "y": Y})
+	add_point(X, Y)
 	return index()
 
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+	app.run(host='0.0.0.0', extra_files=['static/coords.json'])

@@ -3,6 +3,7 @@ package com.example.mapdrawer;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 
 import android.Manifest;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
     TextView coordsTextView;
     Button updateButton;
+    Button cancelButton;
     static ArrayList<Location> all;
     static Location current;
     Intent service;
@@ -43,18 +45,21 @@ public class MainActivity extends AppCompatActivity {
             all = new ArrayList<>();
         }
         service = new Intent(this, MainService.class);
-        startService(service);
-//        startForegroundService(service);
         coordsTextView = findViewById(R.id.coords);
         updateButton = findViewById(R.id.update);
         updateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (all.isEmpty()) {
-                    return;
-                }
-                current = all.get(all.size() - 1);
-                coordsTextView.setText("Новые координаты " + current + "\nВсего записей: " + all.size());
+                startService(service);
+                coordsTextView.setText("Сервер запущен");
+            }
+        });
+        cancelButton = findViewById(R.id.cancel);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopService(service);
+                coordsTextView.setText("Сервер выключен");
             }
         });
         queue = Volley.newRequestQueue(this);
@@ -63,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         Log.d("Activity", "Destroy");
-        stopService(new Intent(this, MainService.class));
         super.onDestroy();
     }
 }

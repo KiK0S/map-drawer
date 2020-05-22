@@ -1,17 +1,62 @@
-
 <html>
 	<head>
 		<meta charset="utf-8">
-		<link rel="stylesheet" href="static/styles.css">	
+		<link rel="stylesheet" href="styles.css">	
 	</head>
 	<body>
 		<div class = "header">
 			<h1>Kikos was here</h1>
 		</div>
-		<div class="map">
-			{% for point in points %} 
-				<p>{{ point.x }} {{ point.y }}</p>
-			{% endfor %}
-		</div>
+		<canvas class="map"> Nothing to see here</canvas>
+		<script>
+			function loadFile(filePath) {
+			  var result = null;
+			  var xmlhttp = new XMLHttpRequest();
+			  xmlhttp.open("GET", filePath, false);
+			  xmlhttp.send();
+			  if (xmlhttp.status==200) {
+			    result = xmlhttp.responseText;
+			  }
+			  return result;
+			}
+			function mapReduce(arr, mapFunc, reduceFunc) {
+				return reduceFunc(...arr.map(mapFunc));
+			}
+			var process = function(arr) {
+				var xFunc = function(point) {
+					return point.x;
+				};
+				var yFunc = function(point) {
+					return point.y;
+				};
+				var minX = mapReduce(arr, xFunc, Math.min);
+				var minY = mapReduce(arr, yFunc, Math.min);
+				var maxX = mapReduce(arr, xFunc, Math.max);
+				var maxY = mapReduce(arr, yFunc, Math.max);
+				var lenX = Math.max(0.0000001, maxX - minX);
+				var lenY = Math.max(0.0000001, maxY - minY);
+				var res = []
+				for (var point of arr) {
+					point.x = 1000 * (point.x - minX) / lenX;
+					point.y = 1000 * (point.y - minY) / lenY;
+					res.push(point);
+				}
+				return res;
+			}
+			var canvas = document.getElementsByClassName("map")[0];
+			canvas.height = 1000;
+			canvas.width = 1000;
+			var ctx = canvas.getContext("2d");
+			ctx.moveTo(0, 0);
+			ctx.beginPath(); 
+			var points = JSON.parse(loadFile('coords.json'));
+			var res = process(points);
+			console.log(res);
+			for (const point of res) {
+				ctx.lineTo(point.x, point.y);
+			}
+			ctx.stroke();
+			console.log(points[0].y + " " + typeof(points));
+		</script>
 	</body>
 </html>

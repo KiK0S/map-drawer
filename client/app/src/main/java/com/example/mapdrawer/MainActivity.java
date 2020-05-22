@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -44,13 +45,12 @@ public class MainActivity extends AppCompatActivity {
         if (all == null) {
             all = new ArrayList<>();
         }
-        service = new Intent(this, MainService.class);
         coordsTextView = findViewById(R.id.coords);
         updateButton = findViewById(R.id.update);
         updateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startService(service);
+                startService(new Intent(getApplicationContext(), MainService.class));
                 coordsTextView.setText("Сервер запущен");
             }
         });
@@ -58,7 +58,10 @@ public class MainActivity extends AppCompatActivity {
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopService(service);
+                stopService(new Intent(getApplicationContext(), MainService.class));
+//                MainService.IL.stop();
+                MainService.locationManager.removeUpdates(MainService.locationListener);
+                MainService.manager.cancel(1);
                 coordsTextView.setText("Сервер выключен");
             }
         });

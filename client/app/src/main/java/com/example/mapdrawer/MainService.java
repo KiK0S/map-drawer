@@ -1,5 +1,6 @@
 package com.example.mapdrawer;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.app.Notification;
@@ -8,6 +9,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Picture;
@@ -22,6 +24,7 @@ import android.util.Log;
 import android.util.TimeUtils;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
 import com.android.volley.AuthFailureError;
@@ -35,12 +38,30 @@ import java.util.Map;
 
 
 public class MainService extends Service {
-    private static LocationManager locationManager;
+    public static LocationManager locationManager;
     static String API_URL = "http://104.140.100.118:5000/add";
-    private static LocationListener locationListener;
-    private static NotificationManager manager;
+    public static LocationListener locationListener;
+    public static NotificationManager manager;
+    Notification notification;
+    public static Thread IL;
 
-    private static int sendData(final Location location) {
+    class InfinityLoop implements Runnable {
+
+        @SuppressLint("MissingPermission")
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                Log.d("Infinite loop", "going");
+            }
+        }
+    }
+
+    private static void sendData(final Location location) {
         StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
@@ -51,8 +72,7 @@ public class MainService extends Service {
             public void onErrorResponse(VolleyError error) {
                 Log.e("Service", error.toString());
             }
-        })
-        {
+        }) {
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 HashMap<String, String> params = new HashMap<>();
@@ -62,49 +82,57 @@ public class MainService extends Service {
             }
         };
         MainActivity.queue.add(stringRequest);
-        return 0;
     }
 
-    @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
+        if (flags != START_FLAG_REDELIVERY) {
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            if (locationListener == null)
+            locationListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    Log.d("Service", "onLocationChanged");
+                    sendData(location);
+                    MainActivity.all.add(location);
+                }
 
-    @SuppressLint("MissingPermission")
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        locationListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                Log.d("Service", "onLocationChanged");
-                sendData(location);
-                MainActivity.all.add(location);
+                @SuppressLint("MissingPermission")
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+                    Log.d("Service", "onStatushanged");
+                    sendData(locationManager.getLastKnownLocation(provider));
+                    MainActivity.all.add(locationManager.getLastKnownLocation(provider));
+                }
+
+                @SuppressLint("MissingPermission")
+                @Override
+                public void onProviderEnabled(String provider) {
+                    Log.d("Service", "onProviderEnabled");
+                    sendData(locationManager.getLastKnownLocation(provider));
+                    MainActivity.all.add(locationManager.getLastKnownLocation(provider));
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+
+                }
+            };
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return START_NOT_STICKY;
             }
-
-            @SuppressLint("MissingPermission")
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-                Log.d("Service", "onStatushanged");
-                sendData(locationManager.getLastKnownLocation(provider));
-                MainActivity.all.add(locationManager.getLastKnownLocation(provider));
-            }
-
-            @SuppressLint("MissingPermission")
-            @Override
-            public void onProviderEnabled(String provider) {
-                Log.d("Service", "onProviderEnabled");
-                sendData(locationManager.getLastKnownLocation(provider));
-                MainActivity.all.add(locationManager.getLastKnownLocation(provider));
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-        };
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 20, 50, locationListener);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 20, -1, locationListener);
+        }
+        else {
+            Log.d("Service", "trying again");
+        }
         Log.d("Service", "started in foreground");
         manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "random name");
@@ -114,20 +142,28 @@ public class MainService extends Service {
             NotificationChannel channel = new NotificationChannel(
                     channelId,
                     "DrawMap Channel",
-                    NotificationManager.IMPORTANCE_LOW);
+                    NotificationManager.IMPORTANCE_HIGH);
             manager.createNotificationChannel(channel);
             builder.setChannelId(channelId);
         }
-        manager.notify(1, builder.setContentText("Я слежу за тобой").setSmallIcon(R.drawable.nature).setContentTitle("Соединен с сервером").build());
-        return super.onStartCommand(intent, flags, startId);
+        notification = builder.setContentText("Я слежу за тобой").setSmallIcon(R.drawable.nature).setContentTitle("Соединен с сервером").build();
+        manager.notify(1, notification);
+        return START_REDELIVER_INTENT;
     }
 
     @Override
     public void onDestroy() {
         Log.d("Service", "destroy");
-        locationManager.removeUpdates(locationListener);
-        manager.cancel(1);
+
         super.onDestroy();
+    }
+
+    @SuppressLint("MissingPermission")
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+
+        return null;
     }
 }
 

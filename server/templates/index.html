@@ -9,6 +9,26 @@
 		</div>
 		<canvas class="map"> Nothing to see here</canvas>
 		<script>
+			function earthDistance(pointA, pointB) {
+			  var lat2 = pointB.y;
+			  var lon2 = pointB.x;
+			  var lat1 = pointA.y;
+			  var lon1 = pointA.x;
+			  var R = 6371; // km
+		      var dLat = toRad(lat2-lat1);
+		      var dLon = toRad(lon2-lon1);
+		      var lat1 = toRad(lat1);
+		      var lat2 = toRad(lat2);
+
+		      var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+		      Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+		      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+		      var d = R * c;
+		      return d;
+			}
+			function toRad(Value) {
+		        return Value * Math.PI / 180;
+		    }
 			function loadFile(filePath) {
 			  var result = null;
 			  var xmlhttp = new XMLHttpRequest();
@@ -22,6 +42,14 @@
 			function mapReduce(arr, mapFunc, reduceFunc) {
 				return reduceFunc(...arr.map(mapFunc));
 			}
+			function toCoords(pos){
+			  var lat = pos.y;
+			  var lon = pos.x;
+  		      var circumferenceAtLat = Math.cos(lat*0.01745329251)*111305;
+			  pos.x = Math.round(lon * circumferenceAtLat);
+			  pos.y = Math.round(lat * 110919);
+			  return pos;
+			}
 			var process = function(arr) {
 				var xFunc = function(point) {
 					return point.x;
@@ -29,6 +57,7 @@
 				var yFunc = function(point) {
 					return point.y;
 				};
+				points = points.map(toCoords);
 				var minX = mapReduce(arr, xFunc, Math.min);
 				var minY = mapReduce(arr, yFunc, Math.min);
 				var maxX = mapReduce(arr, xFunc, Math.max);
@@ -38,10 +67,24 @@
 				var res = []
 				for (var point of arr) {
 					point.x = 1000 * (point.x - minX) / lenX;
-					point.y = 1000 * (point.y - minY) / lenY;
+					point.y = 1000 - (1000 * (point.y - minY) / lenY);
 					res.push(point);
 				}
 				return res;
+			}
+			function dist(a, b) {
+				return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+			}
+			function claster(points) {
+				for (var i = 0; i < points.length; i += 1) {
+					for (var j = 0; j < i; j += 1) {
+						if (dist(points[i], points[j]) < 20) {
+							points[i] = points[j];;
+							break;
+						}
+					}
+				}
+				return points;
 			}
 			var canvas = document.getElementsByClassName("map")[0];
 			canvas.height = 1000;
@@ -49,14 +92,30 @@
 			var ctx = canvas.getContext("2d");
 			ctx.moveTo(0, 0);
 			ctx.beginPath(); 
-			var points = JSON.parse(loadFile('coords.json'));
-			var res = process(points);
-			console.log(res);
-			for (const point of res) {
-				ctx.lineTo(point.x, point.y);
+			var file = JSON.parse(loadFile('coords.json'));
+			var points = [];
+			var idx = [];
+			for (const list of file) {
+				idx.push([]);
+				for (const point of list) {
+					idx[idx.length - 1].push(points.length);
+					points.push({"x": point.y, "y": point.x});
+				}
+			}
+			points = process(points);
+			console.log(points);
+			points = claster(points);
+			console.log(points);
+			for (var i = 0; i < idx.length; i += 1) {
+				if (idx[i].length == 0) {
+					continue;
+				}
+				ctx.moveTo(points[idx[i][0]].x, points[idx[i][0]].y);
+				for (var j = 0; j < idx[i].length; j += 1) {
+					ctx.lineTo(points[idx[i][j]].x, points[idx[i][j]].y);
+				}
 			}
 			ctx.stroke();
-			console.log(points[0].y + " " + typeof(points));
 		</script>
 	</body>
 </html>

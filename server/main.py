@@ -7,8 +7,12 @@ app = Flask("MapDrawer", static_url_path='')
 def add_point(x, y):
 	x = float(x)
 	y = float(y)
+
 	points = json.load(open('static/coords.json', 'r'))
-	points.append({'x': x , 'y': y})
+	if x == 0.0 and y == 0.0:
+		points.append([])
+	else:
+		points[-1].append({'x': x , 'y': y})
 	json.dump(points, open('static/coords.json', 'w'))
 
 @app.route("/")

@@ -12,6 +12,12 @@ local = False
 
 def start(update, context):
 	context.bot.send_message(update.effective_chat.id, 'Готов работать!')
+	r = requests.post(url + "/add", data={"x": 0, "y": 0})
+	if r.status_code == 200:
+		logging.info("send message 	success")
+	else:
+		logging.info(str(r.status_code))
+
 
 def location(update, context):
 	message = None

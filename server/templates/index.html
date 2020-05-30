@@ -78,7 +78,7 @@
 			function claster(points) {
 				for (var i = 0; i < points.length; i += 1) {
 					for (var j = 0; j < i; j += 1) {
-						if (dist(points[i], points[j]) < 20) {
+						if (dist(points[i], points[j]) < 7) {
 							points[i] = points[j];;
 							break;
 						}

@@ -33,4 +33,4 @@ def add():
 
 
 if __name__ == "__main__":
-	app.run(host='0.0.0.0', extra_files=['static/coords.json'])
+	app.run(host='0.0.0.0', extra_files=['static/coords.json'], port=876)
